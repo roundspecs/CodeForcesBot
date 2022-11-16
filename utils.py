@@ -14,6 +14,17 @@ def prompt(messsages: List[str], functions: List[Callable]):
                 break
         print(f"'{answer}' is not a valid option. Please try again.")
 
+def get_credentials(filename: str = "credentials.txt"):
+    try:
+        with open(file=filename) as file:
+            return file.read().splitlines()
+    except FileNotFoundError:
+        print("Credentials:")
+        handle = input("Handle: ")
+        pw = input("Password: ")
+        with open(file=filename, mode='w') as file:
+            file.writelines([handle, '\n', pw])
+        return handle, pw
 
 if __name__ == "__main__":
-    prompt(["hello", "hi"], [lambda: print("hello"), lambda: print("hi")])
+    print(get_credentials())
