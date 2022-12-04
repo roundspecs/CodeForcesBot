@@ -1,12 +1,12 @@
 import time
 import requests
+import random
 from typing import List
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import ElementNotInteractableException
-
+from selenium.webdriver.remote.webelement import WebElement
 
 def generate_problems(
     chrome: Chrome,
@@ -63,6 +63,7 @@ def generate_problems(
     problems = requests.get("https://codeforces.com/api/problemset.problems").json()[
         "result"
     ]["problems"]
+    random.shuffle(problems)
     selected = {}
     count_per_rating, remaining = divmod(count, len(ratings))
     for rating in ratings:
@@ -166,7 +167,7 @@ def problemDict2ID(problem: dict):
     return str(problem.get("contestId")) + str(problem.get("index"))
 
 
-def getElem(wait: WebDriverWait, xpath: str):
+def getElem(wait: WebDriverWait, xpath: str) -> WebElement:
     return wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
 
 
