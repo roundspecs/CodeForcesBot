@@ -8,7 +8,7 @@ def handle_create_mashup():
     print("Mashup Details:")
     name = input("Name: ")
     duration = input("Duration: ")
-    driver = webdriver.Chrome()
+    driver = webdriver.Firefox()
     create_mashup(
         chrome=driver,
         handle=handle,
@@ -25,7 +25,7 @@ def handle_generate_problems():
     contest_url = input("Contest Url: ")
     ratings = [int(x) for x in input("Rating (space separated): ").split()]
     count = int(input("Number of problems to choose: "))
-    driver = webdriver.Chrome()
+    driver = webdriver.Firefox()
     generate_problems(
         chrome=driver,
         contest_url=contest_url,
