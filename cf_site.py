@@ -1,18 +1,21 @@
 import time
-import requests
 import random
-from typing import List
+from typing import Dict, List, Set
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.remote.webelement import WebElement
+from codeforces.methods import problemset_problems, user_status
+from codeforces.models import Problem
+from constants import ALL_TAGS
 
 def generate_problems(
     chrome: Chrome,
     contest_url: str,
-    ratings: List[str],
+    ratings: List[int],
     count: int,
+    tag_indices: List[int],
     handle: str,
     pw: str,
 ):
@@ -48,66 +51,16 @@ def generate_problems(
     # print invitation list
     print("Invitation List: " + ", ".join(handles))
 
-    # Collect attempted problems
-    attempted = set()
-    for handle in handles:
-        status_url = (
-            f"https://codeforces.com/api/user.status?handle={handle}&from=1&count=500"
-        )
-        res = requests.get(status_url)
-        problems = res.json()["result"]
-        for problem in problems:
-            attempted.add(problemDict2ID(problem["problem"]))
-
-    print("Attempted Problems: " + ", ".join(attempted))
-    problems = requests.get("https://codeforces.com/api/problemset.problems").json()[
-        "result"
-    ]["problems"]
-    random.shuffle(problems)
-    selected = {}
-    count_per_rating, remaining = divmod(count, len(ratings))
-    for rating in ratings:
-        selected[rating] = {
-            "count": count_per_rating,
-            "problems": set(),
-        }
-    for i in range(remaining):
-        selected[ratings[i]]["count"] += 1
-    for problem in problems:
-        problem_id = problemDict2ID(problem)
-        if problem_id in attempted:
-            continue
-        problem_rating = problem.get("rating", False)
-        if not problem_rating:
-            continue
-        if problem_rating not in ratings:
-            continue
-        if (
-            len(selected[problem_rating]["problems"])
-            == selected[problem_rating]["count"]
-        ):
-            continue
-        selected[problem_rating]["problems"].add(problem_id)
-        count -= 1
-        if count <= 0:
-            break
-    printable_problems = []
-    for r, v in selected.items():
-        for p in v["problems"]:
-            printable_problems.append((p, r))
-    print(
-        "Selected Problems: ", ", ".join([f"{p}({r})" for p, r in printable_problems])
-    )
+    selected_problems = getSelectedProblems(tag_indices, ratings, handles, count)
 
     # goto problem page
     chrome.get(gym_url + "/problems/new")
-    for i, t in enumerate(printable_problems, start=1):
-        p = t[0]
+    for i, problem in enumerate(selected_problems, start=1):
         problem_input = getElem(
             wait,
             f'//*[@id="pageContent"]/div[2]/div[2]/div[6]/table/tbody/tr[{i}]/td[2]/form/label/input',
         )
-        problem_input.send_keys(p)
+        problem_input.send_keys(str(problem.contestId)+problem.index)
         add_btn = getElem(
             wait,
             f'//*[@id="pageContent"]/div[2]/div[2]/div[6]/table/tbody/tr[{i}]/td[1]/a',
@@ -173,3 +126,50 @@ def getElem(wait: WebDriverWait, xpath: str) -> WebElement:
 
 def getElemClickable(wait: WebDriverWait, xpath: str):
     return wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+
+def getAttemptedProblems(handles: List[str]):
+    attempted: Set[Problem] = set()
+    for handle in handles:
+        submissions = user_status(handle,1,500)
+        for submission in submissions:
+            attempted.add(submission.problem)
+
+    print("Attempted Problems: \n" + "\n".join([str(prob) for prob in attempted]))
+    return attempted
+
+def getSelectedProblems(tag_indices, ratings, handles, count):
+    attempted = getAttemptedProblems(handles)
+    tags = [ALL_TAGS[i-1] for i in tag_indices]
+
+    problems = problemset_problems(tags=tags)
+    random.shuffle(problems)
+    selected: Dict = {}
+    count_per_rating, remaining = divmod(count, len(ratings))
+    for rating in ratings:
+        selected[rating] = {
+            "count": count_per_rating,
+            "problems": set(),
+        }
+    for i in range(remaining):
+        selected[ratings[i]]["count"] += 1
+    for problem in problems:
+        if problem.rating == None or problem.rating not in ratings or problem in attempted:
+            continue
+        if (
+            len(selected[problem.rating]["problems"])
+            == selected[problem.rating]["count"]
+        ):
+            continue
+        selected[problem.rating]["problems"].add(problem)
+        count -= 1
+        if count <= 0:
+            break
+    selected_problems: List[Problem] = []
+    for p in selected.values():
+        selected_problems.extend(p["problems"])
+    print("Selected Problems: \n" + "\n".join([f"{prob.rating} - {prob} - {prob.tags}" for prob in selected_problems]))
+    return selected_problems
+
+if __name__ == "__main__":
+    # getAttemptedProblems(["benq", "sorcerer_21"])
+    getSelectedProblems([4], [800], ["sorcerer_21", "roundspecs", "mahiabdullah", "dev_shajid", "Microboy"], 10)

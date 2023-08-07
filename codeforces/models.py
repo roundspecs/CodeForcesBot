@@ -125,6 +125,11 @@ class Problem(BaseModel):
             and self.name == __value.name
         )
 
+    def __str__(self) -> str:
+        return f"{self.contestId}{self.index} {self.name}"
+
+    def __hash__(self) -> int:
+        return f"{self.contestId}{self.index}".__hash__()
 
 class Submission(BaseModel):
     id: int
@@ -139,4 +144,4 @@ class Submission(BaseModel):
     passedTestCount: int
     timeConsumedMillis: int
     memoryConsumedBytes: int
-    points: Optional[int] = None
+    points: Optional[float] = None

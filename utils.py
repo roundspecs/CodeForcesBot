@@ -1,4 +1,5 @@
 from typing import Callable, List
+from getpass import getpass 
 
 
 def prompt(messsages: List[str], functions: List[Callable]):
@@ -19,9 +20,9 @@ def get_credentials(filename: str = "credentials.txt"):
         with open(file=filename) as file:
             return file.read().splitlines()
     except FileNotFoundError:
-        print("Credentials:")
-        handle = input("Handle: ")
-        pw = input("Password: ")
+        print("Enter your credentials: (Your credentials will be saved locally for later use)")
+        handle = input("Handle\t: ")
+        pw = getpass("Password: ")
         with open(file=filename, mode='w') as file:
             file.writelines([handle, '\n', pw])
         return handle, pw
