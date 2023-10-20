@@ -59,10 +59,17 @@ def user_rating(handle: str) -> list[RatingChange]:
 def user_status(handle: str, from_: int, count: int):
     """Returns submissions of specified user."""
     params = {"handle": handle, "from": from_, "count": count}
-    data = requests.get(
-        url=BASE_URL + "/user.status",
-        params=params,
-    ).json()
-    if data["status"] == Status.FAILED.value:
-        raise CFStatusFailed(data["comment"])
-    return [Submission(**submission) for submission in data["result"]]
+    for t in range(5):
+        res = requests.get(
+            url=BASE_URL + "/user.status",
+            params=params,
+        )
+        try:
+            data = res.json()
+            if data["status"] == Status.FAILED.value:
+                raise CFStatusFailed(data["comment"])
+            return [Submission(**submission) for submission in data["result"]]
+        except Exception as e:
+            print(f"ERROR: {e}. Status: {res.status_code}. Handle: {handle}. Trying again... ({t+1})")
+    
+    return []

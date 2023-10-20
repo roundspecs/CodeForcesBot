@@ -2,14 +2,23 @@ from constants import ALL_TAGS
 from utils import prompt, get_credentials
 from selenium import webdriver
 from cf_site import create_mashup, generate_problems
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.firefox import GeckoDriverManager
 
+
+def get_driver():
+    try:
+        return webdriver.Firefox(service=Service(GeckoDriverManager().install()))
+    except:
+        return webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 
 def handle_create_mashup():
     handle, pw = get_credentials()
     print("Enter Mashup Details:")
     name = input("Name of Contest: ")
     duration = input("Duration(in minutes): ")
-    driver = webdriver.Firefox()
+    driver = get_driver()
     create_mashup(
         chrome=driver,
         handle=handle,
@@ -29,7 +38,7 @@ def handle_generate_problems():
     for i, tag in enumerate(ALL_TAGS, start=1):
         print(f"{i}. {tag}")
     tag_indices = [int(x) for x in input("Tags (int) (space separated): ").split()]
-    driver = webdriver.Firefox()
+    driver = get_driver()
     generate_problems(
         chrome=driver,
         contest_url=contest_url,
